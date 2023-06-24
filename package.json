@@ -1,0 +1,34 @@
+{
+  "name": "events-splitter",
+  "version": "1.0.0",
+  "description": "Randomly split events from one host (Agent) to multiple hosts (Targets)",
+  "main": "app.js",
+  "scripts": {
+    "clean-testreport": "rimraf testreport/*",
+    "copy-files": "mkdir testreport; docker cp Target-2:events.log testreport/target2_events.log; docker cp Target-1:events.log testreport/target1_events.log",
+    "copy-logs": "mkdir testreport; docker logs -t Target-2 > testreport/target2_console.log; docker logs -t Target-1 > testreport/target1_console.log; docker logs -t Splitter > testreport/splitter_console.log; docker logs -t Agent > testreport/agent_console.log",
+    "docker-up": "docker-compose up -d --build",
+    "docker-down": "docker-compose down --rmi local -v",
+    "docker-restart": "npm run docker-down && npm run docker-up",
+    "pretest": "npm run clean-testreport && npm run copy-files",
+    "test": "mocha ./**/*.js --reporter mochawesome --reporter-options reportDir=testreport,reportFilename=testreport"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/clhobbs/events-splitter.git"
+  },
+  "author": "Colleen Hobbs",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/clhobbs/events-splitter/issues"
+  },
+  "homepage": "https://github.com/clhobbs/events-splitter#readme",
+  "devDependencies": {
+    "chai": "^4.3.7",
+    "dockerode": "^3.3.5",
+    "mocha": "^10.2.0",
+    "mochawesome": "^7.1.3",
+    "rimraf": "^5.0.1",
+    "sqlite3": "^5.1.6"
+  }
+}

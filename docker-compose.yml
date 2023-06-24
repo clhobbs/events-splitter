@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+
+  Target-2:
+    build: .
+    image: events-splitter
+    hostname: target_2
+    container_name: Target-2
+    environment:
+      APP_MODE: 'target'
+    expose:
+      - 9997
+    networks:
+      - events-net
+    pull_policy: build
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -an | grep -q 9997"]
+      interval: 10s
+
+  Target-1:
+    image: events-splitter
+    hostname: target_1
+    container_name: Target-1
+    environment:
+      APP_MODE: 'target'
+    expose: 
+      - 9997
+    networks:
+      - events-net
+    depends_on:
+      Target-2:
+        condition: service_healthy
+    pull_policy: never
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -an | grep -q 9997"]
+      interval: 10s
+
+  Splitter:
+    image: events-splitter
+    hostname: splitter
+    container_name: Splitter
+    environment:
+      APP_MODE: 'splitter'
+    expose:
+      - 9997
+    networks:
+      - events-net
+    depends_on:
+      Target-1:
+        condition: service_healthy
+    pull_policy: never
+    healthcheck:
+      test: ["CMD-SHELL", "netstat -an | grep -q 9997"]
+      interval: 10s
+
+  Agent:
+    image: events-splitter
+    hostname: agent
+    container_name: Agent
+    environment:
+      APP_MODE: 'agent'
+    networks:
+      - events-net
+    depends_on:
+      Splitter:
+        condition: service_healthy
+    pull_policy: never
+
+networks:
+  events-net:
