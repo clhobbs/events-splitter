@@ -13,6 +13,9 @@ let db = new sqlite3.Database('./test/events.db');
 const defaultTimeOut = 30000;       // default max time allowed for tests and hooks
 const extendedTimeOut = 120000;     // for long-running tests or hooks
 
+let errorMsg = '';                  // message to display for failed tests
+let errorData = '';                 // for failedTests folder error logs
+
 const testreportFolder = path.join(__dirname, '../testreport');
 
 const agentFile = path.join(__dirname, '../agent/inputs/large_1M_events.log');
@@ -129,9 +132,17 @@ describe('Events Splitter', function() {
         await arrayToDb(allEvents.slice(i, 16383 + i));
       }
       console.log(`db insert end time: ${(new Date()).toLocaleTimeString()}`);
-
     });
     
+    afterEach(function(){
+      if (this.currentTest.state == 'failed') {
+        // write the failed test to the failedTests folder
+        // replace special characters and spaces for the filename
+        let filename = this.currentTest.title.replace(/[\W_]+/g, "-").trim();
+        logFailedTest(filename, errorMsg, errorData);
+      }
+    });
+
     it('target event count should equal agent event count', async() => {
 
       // verify that the number of events in Target1 and Target2 is equal to the number of events from the Agent host/app
@@ -139,12 +150,26 @@ describe('Events Splitter', function() {
       const agentCount = agentEvents.length;
       const targetCount = target1Events.length + target2Events.length;
 
-      const errorMsg = `AGENT EVENTS: ${agentCount},  TARGET EVENTS:  ${targetCount}`;
-      if (agentCount != targetCount) {
-        const filename = 'target-event-count-should-equal-event-count.log';
-        logFailedTest(filename, errorMsg, ' ');
-      }
+      errorMsg = `AGENT EVENTS: ${agentCount},  TARGET EVENTS:  ${targetCount}`;
+      errorData = ' ';
       expect(agentCount).to.equal(targetCount, errorMsg);
+    });
+
+    it('should not have duplicate agent or target events', async() => {
+
+      // all events in the Agent host/app shouold be unique, and therefore events in the Targets after being split should also be unique
+
+      const rows = await new Promise((resolve, reject) => 
+        db.all(`SELECT source, data, count(*) count FROM events GROUP BY source, data HAVING count(*) > 1`, (err, rows) => {
+          if (err) reject(err)
+          else resolve(rows);
+        })
+      );
+      errorMsg = `${rows.length} DUPLICATE EVENTS EXIST`;
+      if (rows.length > 0) {
+        errorData = (rows.map(a => `${a.source}: ${a.count} events: ${a.data}`)).join('\r\n');
+      }
+      expect(rows.length).to.equal(0, errorMsg);
     });
 
     it('agent event should not exist in both targets', async() => {
@@ -157,12 +182,9 @@ describe('Events Splitter', function() {
           else resolve(rows);
         })
       );
-      const errorMsg = `${rows.length} EVENTS ARE IN BOTH TARGETS`;
+      errorMsg = `${rows.length} EVENTS ARE IN BOTH TARGETS`;
       if (rows.length > 0) {
-        // write the erroneous records to a log file
-        const filename = 'agent-events-should-not-exist-in-both-targets.log';
-        const lines = (rows.map(a => a.data)).join('\r\n');
-        logFailedTest(filename, errorMsg, lines);
+        errorData = (rows.map(a => a.data)).join('\r\n');
       }
       expect(rows.length).to.equal(0, errorMsg);
     });
@@ -179,12 +201,9 @@ describe('Events Splitter', function() {
         })
       );
 
-      const errorMsg = `${rows.length} AGENT EVENTS ARE NOT IN A TARGET`;
+      errorMsg = `${rows.length} AGENT EVENTS ARE NOT IN A TARGET`;
       if (rows.length > 0) {
-        // write the erroneous records to a log file
-        const filename = 'every-agent-event-should-exist-in-a-target.log';
-        const lines = (rows.map(a => a.data)).join('\r\n');
-        logFailedTest(filename, errorMsg, lines);
+        errorData = (rows.map(a => a.data)).join('\r\n');
       }
       expect(rows.length).to.equal(0, errorMsg);        
     });
@@ -195,17 +214,16 @@ describe('Events Splitter', function() {
       // this will help catch any events that are mistakenly truncated
 
       const rows = await new Promise((resolve, reject) => 
-        db.all(`SELECT data FROM events WHERE source IN ('Target1', 'Target2') EXCEPT SELECT data FROM events WHERE source = 'Agent'`, (err, rows) => {
+        db.all(`SELECT 'Target1' source, data FROM events WHERE source = 'Target1' EXCEPT SELECT 'Target1' source, data FROM events WHERE source = 'Agent'
+                UNION
+                SELECT 'Target2' source, data FROM events WHERE source = 'Target2' EXCEPT SELECT 'Target2' source, data FROM events WHERE source = 'Agent'`, (err, rows) => {
             if (err) reject(err)
             else resolve(rows);
         })
       );
-      const errorMsg = `${rows.length} EVENTS FOUND IN THE TARGETS THAT ARE NOT IN THE AGENT`;
+      errorMsg = `${rows.length} EVENTS FOUND IN THE TARGETS THAT ARE NOT IN THE AGENT`;
       if (rows.length > 0) {
-        // write the erroneous records to a log file
-        const filename = 'targets-should-not-contain-events-that-are-not-in-the-agent.log';
-        const lines = (rows.map(a => a.data)).join('\r\n');
-        logFailedTest(filename, errorMsg, lines);
+        errorData = (rows.map(a => `${a.source}: ${a.data}`)).join('\r\n');
       }
       expect(rows.length).to.equal(0, errorMsg);
     });
