@@ -28,3 +28,4 @@ After a test run, the following are written to the `testreports` folder:
 2. `targetX_events.log` - the events.log files (raw data from the split) from the Target containers 
 3. `failedTests` - folder containing a log file for each failed test with detailed information about the failure
 4. `[container_name]_console.log` - console logs from each of the containers
+5. `events.db` - the sqlite3 database used by the tests, contains the Agent and Target events
