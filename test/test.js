@@ -8,7 +8,7 @@ const Docker = require('dockerode');
 const docker = new Docker();
 
 const sqlite3 = require('sqlite3').verbose();
-let db = new sqlite3.Database(':memory:');
+let db = new sqlite3.Database('./test/events.db');
 
 const defaultTimeOut = 30000;       // default max time allowed for tests and hooks
 const extendedTimeOut = 120000;     // for long-running tests or hooks
@@ -50,11 +50,9 @@ async function fileToArray(file, arr, source) {
 async function arrayToDb(arr) {
 
   return new Promise((resolve, reject) => {
-    console.log(`inserting ${arr.length} records into database, this can take a minute...`);
+    console.log(`inserting ${arr.length} records into database...`);
     console.log(`db insert start time: ${(new Date()).toLocaleTimeString()}`);
     db.serialize(function() {
-      db.run("CREATE TABLE events (source TEXT, data TEXT)");
-
       db.run("begin transaction");
   
       for (var i = 0; i < arr.length; i++) {
@@ -118,7 +116,9 @@ describe('Events Splitter', function() {
       this.timeout(extendedTimeOut);
 
       // insert all rows from the events arrays into the db
-      await arrayToDb([...agentEvents, ...target1Events, ...target2Events]);
+      await arrayToDb(target2Events);
+      await arrayToDb(target1Events);
+      await arrayToDb(agentEvents);
     });
     
     it('target event count should equal agent event count', async() => {
