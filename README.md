@@ -35,4 +35,4 @@ The tests in this repo have been set up to automatically run whenever any code c
 4. `git push --set-upstream origin new-branch-name` to push the commit to Github
 5. Create a PR and select the 'Checks' tab in the PR
 
-The steps outlined in the Github Actions .yml file can be seen. The tests will run and the `testreport` folder will be available under 'Artifacts' when the workflow completes.
+The steps outlined in the Github Actions .yml file can be seen. If there are failures, the `testreport` folder can be downloaded from the workflow run under the [Actions](https://github.com/clhobbs/events-splitter/actions) tab.
