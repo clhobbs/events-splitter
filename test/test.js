@@ -106,7 +106,7 @@ describe('Events Splitter', function() {
 
   after(async function() {
     // clear out the data and close the db
-    // db.run("DELETE FROM events");
+    db.run("DELETE FROM events");
     db.close();
   });
 

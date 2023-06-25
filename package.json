@@ -10,7 +10,7 @@
     "docker-up": "docker-compose up -d --build",
     "docker-down": "docker-compose down --rmi local -v",
     "docker-restart": "npm run docker-down && npm run docker-up",
-    "pretest": "npm run clean-testreport && npm run copy-files",
+    "pretest": "npm run clean-testreport && npm run copy-files && npm run copy-logs",
     "test": "mocha ./**/*.js --reporter mochawesome --reporter-options reportDir=testreport,reportFilename=testreport"
   },
   "repository": {
