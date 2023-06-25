@@ -19,6 +19,10 @@ jobs:
       - name: Start containers
         run: npm run docker-up
 
+      - name: Sleep for 10 seconds
+        run: sleep 10s
+        shell: bash       
+
       - name: Run tests
         run: npm run test
 
