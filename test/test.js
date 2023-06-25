@@ -105,9 +105,12 @@ describe('Events Splitter', function() {
   });
 
   after(async function() {
-    // clear out the data and close the db
-    db.run("DELETE FROM events");
-    db.close();
+    // copy the db to the testreports folder, clear out the data and close the db
+    fs.copyFile('./test/events.db', './testreport/events.db', () => {
+      db.run("DELETE FROM events");
+      db.close();    
+    });
+
   });
 
   describe('Validate events', async function() {
