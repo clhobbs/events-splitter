@@ -47,22 +47,23 @@ async function fileToArray(file, arr, source) {
   });  
 }
 
-async function arrayToDb(arr, source) {
+async function arrayToDb(arr) {
 
   return new Promise((resolve, reject) => {
-    console.log(`inserting ${arr.length} ${source} records into database...`);
-    console.log(`${source} insert start time: ${(new Date()).toLocaleTimeString()}`);
+
+    const placeholders = arr.map(() => "(?, ?)").join(', ');
+    const insertStmt = `INSERT INTO events (source, data) VALUES ${placeholders}`;
+
     db.serialize(function() {
       db.run("begin transaction");
   
-      for (var i = 0; i < arr.length; i++) {
-        db.run("insert into events(source, data) values (?, ?)", arr[i][0], arr[i][1]);
-      }
+      // for (var i = 0; i < arr.length; i++) {
+        db.run(insertStmt, arr.flat());
+      // }
 
       db.run("commit", (res, err) => {
         if (err) reject()
         else {
-          console.log(`${source} insert end time: ${(new Date()).toLocaleTimeString()}`);
           resolve();
         }
       });
@@ -105,23 +106,27 @@ describe('Events Splitter', function() {
 
   after(async function() {
     // clear out the data and close the db
-    db.run("DELETE FROM events");
+    // db.run("DELETE FROM events");
     db.close();
   });
 
   describe('Validate events', async function() {
       
     before(async function() {
-      // use extended timeout duration - filling up the database with millions of rows can take some time, especially
-      // when using the Github Actions VM (hence the * 2)
-      this.timeout(extendedTimeOut * 2);
+      // use extended timeout duration - filling up the database with millions of rows can take some time
+      this.timeout(extendedTimeOut);
 
-      // insert all rows from the events arrays into the db
-      await Promise.all([
-        arrayToDb(target2Events, 'Target2'),
-        arrayToDb(target1Events, 'Target1'),
-        arrayToDb(agentEvents, 'Agent')
-      ]);
+      // bulk insert records from the events arrays into the db - this is done in chunks of 16383 records due to
+      // the limit set by sqlite (SQLITE_MAX_VARIABLE_NUMBER)
+      const allEvents = [...target2Events, ...agentEvents, ...target1Events];
+      console.log(`inserting ${allEvents.length} records into database...`);
+      console.log(`db insert start time: ${(new Date()).toLocaleTimeString()}`);
+  
+      for (let i = 0; i < allEvents.length; i += 16383) {
+        await arrayToDb(allEvents.slice(i, 16383 + i));
+      }
+      console.log(`db insert end time: ${(new Date()).toLocaleTimeString()}`);
+
     });
     
     it('target event count should equal agent event count', async() => {
