@@ -4,28 +4,14 @@ const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
 
-const Docker = require('dockerode');
-const docker = new Docker();
-
 const sqlite3 = require('sqlite3').verbose();
 let db = new sqlite3.Database('./test/events.db');
 
-const defaultTimeOut = 30000;       // default max time allowed for tests and hooks
-const extendedTimeOut = 120000;     // for long-running tests or hooks
-
-let errorMsg = '';                  // message to display for failed tests
-let errorData = '';                 // for failedTests folder error logs
-
-const testreportFolder = path.join(__dirname, '../testreport');
-
-const agentFile = path.join(__dirname, '../agent/inputs/large_1M_events.log');
-const target1File = path.join(__dirname, '../testreport/target1_events.log');
-const target2File = path.join(__dirname, '../testreport/target2_events.log');
-
-let agentEvents;
-let target1Events;
-let target2Events;
-
+// for reporting test case failures
+let errorMsg = '';
+let errorData = '';
+const failedTestsFolder = path.join(__dirname, '../testreport/failedTests');
+ 
 /**
  * Insert each line from a file into an array.
  * 
@@ -50,6 +36,11 @@ async function fileToArray(file, arr, source) {
   });  
 }
 
+/**
+ * Insert an array of values into the events table in the db.
+ * 
+ * @param {*} arr 
+ */
 async function arrayToDb(arr) {
 
   return new Promise((resolve, reject) => {
@@ -60,9 +51,7 @@ async function arrayToDb(arr) {
     db.serialize(function() {
       db.run("begin transaction");
   
-      // for (var i = 0; i < arr.length; i++) {
-        db.run(insertStmt, arr.flat());
-      // }
+      db.run(insertStmt, arr.flat());
 
       db.run("commit", (res, err) => {
         if (err) reject()
@@ -74,37 +63,25 @@ async function arrayToDb(arr) {
   });
 }
 
-async function logFailedTest(filename, errorMsg, data) {
-
-  const failedTestsFolder = path.join(testreportFolder, 'failedTests');
-  if (!fs.existsSync(failedTestsFolder)) fs.mkdirSync(failedTestsFolder);
-
-  fs.writeFile(path.join(failedTestsFolder, filename), errorMsg + ':\n' + data, (err) => {
-    if (err)
-      console.log(err);
-    else {
-      console.log("Error log file written successfully\n");
-    }
-  });
-}
-
 describe('Events Splitter', function() {
-  this.timeout(defaultTimeOut);
+
+  let agentEvents = [];
+  let target1Events = [];
+  let target2Events = [];
 
   before(async function() {
-    agentEvents = [];
-    target1Events = [];
-    target2Events = [];
 
+    const agentFile = path.join(__dirname, '../agent/inputs/large_1M_events.log');
+    const target1File = path.join(__dirname, '../testreport/target1_events.log');
+    const target2File = path.join(__dirname, '../testreport/target2_events.log');
+  
     // fill up the arrays with all rows from the agent / target1 / target2 files
-    // await Promise.all([
-    //     toArray(agentFile, agentLines, 'Agent'),
-    //     toArray(target1File, target1Lines, 'Target1'),
-    //     toArray(target2File, target2Lines, 'Target2')
-    // ]);
-    await fileToArray(agentFile, agentEvents, 'Agent');
-    await fileToArray(target1File, target1Events, 'Target1');
-    await fileToArray(target2File, target2Events, 'Target2');
+    await Promise.all([
+        fileToArray(agentFile, agentEvents, 'Agent'),
+        fileToArray(target1File, target1Events, 'Target1'),
+        fileToArray(target2File, target2Events, 'Target2')
+    ]);
+
   });
 
   after(async function() {
@@ -119,9 +96,6 @@ describe('Events Splitter', function() {
   describe('Validate events', async function() {
       
     before(async function() {
-      // use extended timeout duration - filling up the database with millions of rows can take some time
-      this.timeout(extendedTimeOut);
-
       // bulk insert records from the events arrays into the db - this is done in chunks of 16383 records due to
       // the limit set by sqlite (SQLITE_MAX_VARIABLE_NUMBER)
       const allEvents = [...target2Events, ...agentEvents, ...target1Events];
@@ -137,9 +111,15 @@ describe('Events Splitter', function() {
     afterEach(function(){
       if (this.currentTest.state == 'failed') {
         // write the failed test to the failedTests folder
+        if (!fs.existsSync(failedTestsFolder)) fs.mkdirSync(failedTestsFolder);
+
         // replace special characters and spaces for the filename
-        let filename = this.currentTest.title.replace(/[\W_]+/g, "-").trim();
-        logFailedTest(filename, errorMsg, errorData);
+        let filename = this.currentTest.title.replace(/[\W_]+/g, "-").trim() + '.log';
+
+        fs.writeFile(path.join(failedTestsFolder, filename), errorMsg + ':\n' + errorData, (err) => {
+          if (err) console.log(err);
+          else console.log("failedTest log file written successfully\n");
+        });
       }
     });
 
@@ -174,7 +154,7 @@ describe('Events Splitter', function() {
 
     it('agent event should not exist in both targets', async() => {
 
-      // verify that each event from the Agent does not exist both targets
+      // verify that an event from the Agent does not exist both targets
 
       const rows = await new Promise((resolve, reject) => 
         db.all(`SELECT data FROM events WHERE source = 'Target1' INTERSECT SELECT data FROM events WHERE source = 'Target2'`, (err, rows) => {
