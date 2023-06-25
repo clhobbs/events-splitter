@@ -112,8 +112,9 @@ describe('Events Splitter', function() {
   describe('Validate events', async function() {
       
     before(async function() {
-      // use extended timeout duration - filling up the database with millions of rows can take some time
-      this.timeout(extendedTimeOut);
+      // use extended timeout duration - filling up the database with millions of rows can take some time, especially
+      // when using the Github Actions VM (hence the *2)
+      this.timeout(extendedTimeOut * 2);
 
       // insert all rows from the events arrays into the db
       await arrayToDb(target2Events);
