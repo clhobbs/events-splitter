@@ -47,11 +47,11 @@ async function fileToArray(file, arr, source) {
   });  
 }
 
-async function arrayToDb(arr) {
+async function arrayToDb(arr, source) {
 
   return new Promise((resolve, reject) => {
-    console.log(`inserting ${arr.length} records into database...`);
-    console.log(`db insert start time: ${(new Date()).toLocaleTimeString()}`);
+    console.log(`inserting ${arr.length} ${source} records into database...`);
+    console.log(`${source} insert start time: ${(new Date()).toLocaleTimeString()}`);
     db.serialize(function() {
       db.run("begin transaction");
   
@@ -62,7 +62,7 @@ async function arrayToDb(arr) {
       db.run("commit", (res, err) => {
         if (err) reject()
         else {
-          console.log(`db insert end time: ${(new Date()).toLocaleTimeString()}`);
+          console.log(`${source} insert end time: ${(new Date()).toLocaleTimeString()}`);
           resolve();
         }
       });
@@ -113,13 +113,15 @@ describe('Events Splitter', function() {
       
     before(async function() {
       // use extended timeout duration - filling up the database with millions of rows can take some time, especially
-      // when using the Github Actions VM (hence the *2)
+      // when using the Github Actions VM (hence the * 2)
       this.timeout(extendedTimeOut * 2);
 
       // insert all rows from the events arrays into the db
-      await arrayToDb(target2Events);
-      await arrayToDb(target1Events);
-      await arrayToDb(agentEvents);
+      await Promise.all([
+        arrayToDb(target2Events, 'Target2'),
+        arrayToDb(target1Events, 'Target1'),
+        arrayToDb(agentEvents, 'Agent')
+      ]);
     });
     
     it('target event count should equal agent event count', async() => {
