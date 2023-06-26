@@ -13,7 +13,7 @@ let errorData = '';
 const failedTestsFolder = path.join(__dirname, '../testreport/failedTests');
  
 /**
- * Insert each line from a file into an array.
+ * Insert each line from an events file into an events array.
  * 
  * @param {*} file 
  * @param {*} arr
