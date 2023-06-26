@@ -6,3 +6,4 @@ node_modules
 
 # Test output
 testreport
+test/events.db
