@@ -86,11 +86,9 @@ describe('Events Splitter', function() {
 
   after(async function() {
     // copy the db to the testreports folder, clear out the data and close the db
-    fs.copyFile('./test/events.db', './testreport/events.db', () => {
-      db.run("DELETE FROM events");
-      db.close();    
-    });
-
+    await fs.promises.copyFile('./test/events.db', './testreport/events.db');
+    db.run("DELETE FROM events");
+    db.close();    
   });
 
   describe('Validate events', async function() {
@@ -108,11 +106,11 @@ describe('Events Splitter', function() {
       console.log(`db insert end time: ${(new Date()).toLocaleTimeString()}`);
     });
     
-    afterEach(function(){
+    afterEach(async function(){
       if (this.currentTest.state == 'failed') {
-        // write the failed test to the failedTests folder
-        if (!fs.existsSync(failedTestsFolder)) fs.mkdirSync(failedTestsFolder);
-
+        // write the failed test to the testreport/failedTests folder
+        if (!fs.existsSync(failedTestsFolder)) await fs.promises.mkdir(failedTestsFolder);
+        
         // replace special characters and spaces for the filename
         let filename = this.currentTest.title.replace(/[\W_]+/g, "-").trim() + '.log';
 
