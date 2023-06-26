@@ -171,8 +171,7 @@ describe('Events Splitter', function() {
 
     it('every agent event should exist in a target', async() => {
 
-      // verify that every agent event has been written to a target
-      // if an agent line was missed, then the assertion is thrown
+      // verify that every Agent event has been written to a target
 
       const rows = await new Promise((resolve, reject) => 
         db.all(`SELECT data FROM events WHERE source = 'Agent' EXCEPT SELECT data FROM events WHERE source IN ('Target1', 'Target2')`, (err, rows) => {
@@ -190,8 +189,7 @@ describe('Events Splitter', function() {
 
     it('targets should not contain events that are not in the agent', async() => {
 
-      // verify that Target1 and Target2 do not contain any events that are not in the agent file
-      // this will help catch any events that are mistakenly truncated
+      // verify that Target1 and Target2 do not contain any events that are not in the Agent file
 
       const rows = await new Promise((resolve, reject) => 
         db.all(`SELECT 'Target1' source, data FROM events WHERE source = 'Target1' EXCEPT SELECT 'Target1' source, data FROM events WHERE source = 'Agent'
