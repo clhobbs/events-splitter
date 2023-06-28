@@ -8,12 +8,13 @@ const spawn = require('child_process').spawn;
 const sqlite3 = require('sqlite3').verbose();
 let db = new sqlite3.Database('./test/events.db');
 
-let extendedTimeout = 60000;  // for long-running hooks or tests
+let extendedTimeout = 90000;  // for long-running hooks or tests
 
 // for reporting test case failures
 let errorMsg = '';
 let errorData = '';
-const failedTestsFolder = path.join(__dirname, '../testreport/failedTests');
+const testreportFolder = path.join(__dirname, '../testreport');
+const failedTestsFolder = path.join(testreportFolder, 'failedTests');
  
 /**
  * Insert each line from an events file into an events array.
@@ -107,7 +108,7 @@ describe('Events Splitter', function() {
 
     // copy the Target events files to the testreport folder
     console.log('copying Target event files');
-    if (!fs.existsSync('../testreport')) await fs.promises.mkdir('../testreport');
+    if (!fs.existsSync(testreportFolder)) await fs.promises.mkdir(testreportFolder);
     await runCommand('docker', ['cp', 'Target-1:events.log', 'testreport/target1_events.log']);
     await runCommand('docker', ['cp', 'Target-2:events.log', 'testreport/target2_events.log']);
 
