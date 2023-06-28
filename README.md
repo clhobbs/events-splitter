@@ -20,8 +20,7 @@ Pre-reqs for running the tests on your local machine:
 2. Run `npm install` to install all the test dependencies
 
 To run the tests (from a terminal):
-1. Make sure the split has been performed and the Docker containers are up (use either `npm run docker-restart` or `npm run docker-up`)
-2. Run `npm run test`
+1. Run `npm run test` - this will automatically start up the docker containers, run the tests, and then teardown the docker containers when the tests complete
 
 After a test run, the following are written to the `testreport` folder:
 1. `testreport.html` - mochawesome report showing the passed/failed test cases
