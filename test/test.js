@@ -4,6 +4,7 @@ const fs = require('fs');
 const readline = require('readline');
 const path = require('path');
 const spawn = require('child_process').spawn;
+const addContext = require('mochawesome/addContext')
 
 const sqlite3 = require('sqlite3').verbose();
 let db = new sqlite3.Database('./test/events.db');
@@ -166,6 +167,10 @@ describe('Events Splitter', function() {
         fs.writeFile(path.join(failedTestsFolder, filename), errorMsg + ':\n' + errorData, (err) => {
           if (err) console.log(err);
           else console.log("failedTest log file written successfully\n");
+        });
+        addContext(this, { 
+          title: 'Events data that caused this failure is in this file', 
+          value: `testreport/failedTests/${filename}`
         });
       }
     });
