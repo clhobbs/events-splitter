@@ -9,8 +9,6 @@ services:
     container_name: Target-2
     environment:
       APP_MODE: 'target'
-    expose:
-      - 9997
     networks:
       - events-net
     pull_policy: build
@@ -24,8 +22,6 @@ services:
     container_name: Target-1
     environment:
       APP_MODE: 'target'
-    expose: 
-      - 9997
     networks:
       - events-net
     depends_on:
@@ -42,8 +38,6 @@ services:
     container_name: Splitter
     environment:
       APP_MODE: 'splitter'
-    expose:
-      - 9997
     networks:
       - events-net
     depends_on:
