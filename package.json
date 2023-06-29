@@ -5,13 +5,12 @@
   "main": "app.js",
   "scripts": {
     "clean-testreport": "rimraf testreport/*",
-    "copy-files": "mkdir testreport; docker cp Target-2:events.log testreport/target2_events.log; docker cp Target-1:events.log testreport/target1_events.log",
     "copy-logs": "mkdir testreport; docker compose logs > testreport/containers_console.log",
     "docker-up": "docker compose up -d --build",
     "docker-down": "docker compose down --rmi local -v",
     "docker-restart": "npm run docker-down && npm run docker-up",
-    "pretest": "npm run docker-restart && npm run clean-testreport && npm run copy-files && npm run copy-logs",
-    "test": "mocha ./**/*.js --timeout 10000 --reporter mochawesome --reporter-options reportDir=testreport,reportFilename=testreport; npm run docker-down"
+    "pretest": "npm run clean-testreport",
+    "test": "mocha ./**/*.js --timeout 10000 --reporter mochawesome --reporter-options reportDir=testreport,reportFilename=testreport"
   },
   "repository": {
     "type": "git",

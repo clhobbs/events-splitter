@@ -16,13 +16,6 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Start containers
-        run: npm run docker-up
-
-      - name: Sleep for 5 seconds
-        run: sleep 5s
-        shell: bash       
-
       - name: Run tests
         run: npm run test
 
@@ -33,9 +26,5 @@ jobs:
           name: testreport
           path: testreport
           retention-days: 1
-
-      - name: Stop containers
-        if: always()
-        run: npm run docker-down
 
       - run: echo "🍏 This job's status is ${{ job.status }}."
